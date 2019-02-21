@@ -4,7 +4,7 @@ import "./ERC20Mintable.sol";
 import "./ERC20Burnable.sol";
 import "./Ownable.sol";
 
-contract WorldBit is ERC20, ERC20Burnable, ERC20Mintable, Ownable {
+contract WorldBitToken is ERC20, ERC20Burnable, ERC20Mintable, Ownable {
     string private _name = "WorldBit";
     string private _symbol = "WBT";
     uint8 private _decimals = 18;
@@ -20,7 +20,7 @@ contract WorldBit is ERC20, ERC20Burnable, ERC20Mintable, Ownable {
     // WorldBit Event and Emmit interface
     event WorldBitEvent(address object, bytes2 operand, bytes2 command, uint256 val1, uint256 val2, string location, string str1, string str2, string comment);
 
-    function WorldBitRecord(address object, bytes2 operand, bytes2 command, uint256 val1, uint256 val2, string memory location, string memory str1, string memory str2, string memory comment) public {
+    function WorldBit(address object, bytes2 operand, bytes2 command, uint256 val1, uint256 val2, string memory location, string memory str1, string memory str2, string memory comment) public {
         emit WorldBitEvent(object, operand, command, val1, val2, location, str1, str2, comment);
     }
 
