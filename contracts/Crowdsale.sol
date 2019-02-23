@@ -4,11 +4,12 @@ import "./IERC20.sol";
 import "./SafeMath.sol";
 import "./SafeERC20.sol";
 import "./ReentrancyGuard.sol";
+import "./Ownable.sol";
 
 /**
  * @title WorldBit sale contract
  */
-contract Crowdsale is ReentrancyGuard {
+contract Crowdsale is ReentrancyGuard, Ownable {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
@@ -23,6 +24,11 @@ contract Crowdsale is ReentrancyGuard {
     // So, if you are using a rate of 1 with a ERC20Detailed token with 3 decimals called TOK
     // 1 wei will give you 1 unit, or 0.001 TOK.
     uint256 private _rate;
+
+    // determine _rate is conversion rate between wei and token, or token between wei.
+    // true : tokenAmount =  wei * _rate
+    // false : tokenAmount = wei / _rate
+    bool private _isRateWeiBased;
 
     // Amount of wei raised
     uint256 private _weiRaised;
@@ -41,10 +47,11 @@ contract Crowdsale is ReentrancyGuard {
      * @dev The rate is the conversion between wei and the smallest and indivisible
      * token unit. So, if you are using a rate of 1 with a ERC20Detailed token
      * with 3 decimals called TOK, 1 wei will give you 1 unit, or 0.001 TOK.
+     * @param isRateWeiBased rate calculation method 
      * @param wallet Address where collected funds will be forwarded to
      * @param token Address of the token being sold
      */
-    constructor (uint256 rate, address payable wallet, IERC20 token) public {
+    constructor (uint256 rate, bool isRateWeiBased, address payable wallet, IERC20 token) public {
         require(rate > 0);
         require(wallet != address(0));
         require(address(token) != address(0));
@@ -52,6 +59,7 @@ contract Crowdsale is ReentrancyGuard {
         _rate = rate;
         _wallet = wallet;
         _token = token;
+        _isRateWeiBased = isRateWeiBased;
     }
 
     /**
@@ -93,10 +101,22 @@ contract Crowdsale is ReentrancyGuard {
     }
 
     /**
-     * Set rate 
+     * Set rate
+     * @param rate Number of token units a buyer gets per wei
      */
-    function setRate(uint256 rate) public {
+    function setRate(uint256 rate, bool isRateWeiBased) public onlyOwner {
         _rate = rate;
+        _isRateWeiBased = isRateWeiBased;
+    }
+
+    /**
+     * withdraw unsold tokens to beneficiary wallet
+     * @param beneficiary Address performing the token purchase
+     * @param tokenAmount Number of tokens to be emitted
+     */
+    function withdrawToken(address beneficiary, uint256 tokenAmount) public onlyOwner {
+        require(beneficiary != address(0));
+        _deliverTokens(beneficiary, tokenAmount);
     }
 
     /**
@@ -184,7 +204,10 @@ contract Crowdsale is ReentrancyGuard {
      * @return Number of tokens that can be purchased with the specified _weiAmount
      */
     function _getTokenAmount(uint256 weiAmount) internal view returns (uint256) {
-        return weiAmount.mul(_rate);
+        if (_isRateWeiBased)
+            return weiAmount.mul(_rate);
+        else
+            return weiAmount.div(_rate);
     }
 
     /**
